@@ -109,6 +109,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
   import { getAuth, onAuthStateChanged, updateProfile, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCiWN76pTmswQetee7CGdNc6Q845Hrdg8A",
@@ -121,6 +122,7 @@
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
+  const db = getFirestore(app);
 
   const userName = document.getElementById("userName");
   const userEmail = document.getElementById("userEmail");
@@ -129,13 +131,18 @@
   const updateName = document.getElementById("updateName");
   const logoutBtn = document.getElementById("logoutBtn");
 
-  onAuthStateChanged(auth, (user) => {
+  const postForm = document.getElementById("postForm");
+  const postyLista = document.getElementById("postyLista");
+
+  onAuthStateChanged(auth, async (user) => {
     if (!user) return window.location.href = "/login.html";
 
+    // Wczytaj dane użytkownika
     userName.textContent = user.displayName || "Brak";
     userEmail.textContent = user.email;
     userUID.textContent = user.uid;
 
+    // Zmiana nazwy użytkownika
     updateName.onclick = async () => {
       const newName = newDisplayName.value.trim();
       if (newName.length < 3) return alert("Nazwa musi mieć min. 3 znaki");
@@ -144,9 +151,45 @@
       alert("Zaktualizowano nazwę!");
     };
 
+    // Wylogowanie
     logoutBtn.onclick = () => {
       signOut(auth).then(() => window.location.href = "/";
     };
+
+    // Dodawanie posta
+    postForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const title = document.getElementById("postTitle").value.trim();
+      const content = document.getElementById("postContent").value.trim();
+
+      if (title && content) {
+        await addDoc(collection(db, "posty"), {
+          uid: user.uid,
+          author: user.displayName || "Anonim",
+          title,
+          content,
+          time: Date.now()
+        });
+        postForm.reset();
+        pobierzMojePosty(user.uid);
+      }
+    });
+
+    // Pobieranie postów
+    async function pobierzMojePosty(uid) {
+      postyLista.innerHTML = "";
+      const q = query(collection(db, "posty"), where("uid", "==", uid));
+      const snapshot = await getDocs(q);
+      snapshot.forEach(doc => {
+        const post = doc.data();
+        const div = document.createElement("div");
+        div.className = "post-box";
+        div.innerHTML = `<h4>${post.title}</h4><p>${post.content}</p>`;
+        postyLista.appendChild(div);
+      });
+    }
+
+    pobierzMojePosty(user.uid);
   });
 </script>
 </body>
