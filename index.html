@@ -215,7 +215,11 @@
           const post = doc.data();
           const div = document.createElement("div");
           div.className = "post-box";
-          div.innerHTML = `<h4>${post.title}</h4><p>${post.content}</p>`;
+          div.innerHTML = `
+  <a href="/posty/post?id=${doc.id}">
+    <h4>${post.title}</h4>
+    <p>${post.content.substring(0, 100)}...</p>
+  </a>`;
           postyLista.appendChild(div);
         });
       } catch (err) {
