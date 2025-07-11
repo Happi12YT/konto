@@ -53,7 +53,7 @@
   </div>
 
   <hr/>
-
+<div id="komunikat" class="komunikat-box"></div>
   <div class="moje-posty">
     <h3>Moje posty</h3>
     <form id="postForm">
@@ -111,7 +111,7 @@
   import { getAuth, onAuthStateChanged, updateProfile, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
   import { getFirestore, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
-  // Konfiguracja Firebase
+  // 🔥 Konfiguracja Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyCiWN76pTmswQetee7CGdNc6Q845Hrdg8A",
     authDomain: "happi12-sites.firebaseapp.com",
@@ -121,12 +121,19 @@
     appId: "1:269132427609:web:049c9b03f8b4224a37dc48"
   };
 
-  // Inicjalizacja
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-  // Elementy DOM
+  // 🔔 Funkcja komunikatu na stronie
+  function pokazKomunikat(tresc, typ = "info") {
+    const box = document.getElementById("komunikat");
+    box.textContent = tresc;
+    box.style.borderLeftColor = typ === "error" ? "#d9534f" : "#ffc107";
+    box.style.background = typ === "error" ? "#f8d7da" : "#fffbdd";
+  }
+
+  // 🎯 Elementy interfejsu
   const userName = document.getElementById("userName");
   const userEmail = document.getElementById("userEmail");
   const userUID = document.getElementById("userUID");
@@ -136,34 +143,39 @@
   const postForm = document.getElementById("postForm");
   const postyLista = document.getElementById("postyLista");
 
-  // Monitorowanie stanu zalogowania
+  // 👤 Sprawdzenie stanu zalogowania
   onAuthStateChanged(auth, async (user) => {
-    if (!user) return window.location.href = "/login.html";
+    if (!user) {
+      pokazKomunikat("Nie jesteś zalogowany", "error");
+      return window.location.href = "/login.html";
+    }
 
-    // Wczytywanie danych użytkownika
+    pokazKomunikat("Witaj, " + (user.displayName || "Użytkowniku") + "!");
+
+    // Dane użytkownika
     userName.textContent = user.displayName || "Brak";
     userEmail.textContent = user.email;
     userUID.textContent = user.uid;
 
-    // Zmiana nazwy
+    // 🔧 Zmiana nazwy użytkownika
     updateName.onclick = async () => {
       const newName = newDisplayName.value.trim();
-      if (newName.length < 3) return alert("Nazwa musi mieć min. 3 znaki");
+      if (newName.length < 3) return pokazKomunikat("Nazwa musi mieć min. 3 znaki", "error");
       try {
         await updateProfile(user, { displayName: newName });
         userName.textContent = newName;
-        alert("Zaktualizowano nazwę!");
+        pokazKomunikat("Zmieniono nazwę użytkownika na: " + newName);
       } catch (err) {
-        alert("Błąd zmiany nazwy: " + err.message);
+        pokazKomunikat("Błąd zmiany nazwy: " + err.message, "error");
       }
     };
 
-    // Wylogowanie
+    // 🚪 Wylogowanie
     logoutBtn.onclick = () => {
-      signOut(auth).then(() => window.location.href = "/";
+      signOut(auth).then(() => window.location.href = "/");
     };
 
-    // Dodawanie posta
+    // 📝 Dodawanie posta
     postForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const title = document.getElementById("postTitle").value.trim();
@@ -171,7 +183,7 @@
 
       if (title && content) {
         try {
-          await addDoc(collection(db, "posty"), {
+          const docRef = await addDoc(collection(db, "posty"), {
             uid: user.uid,
             author: user.displayName || "Anonim",
             title,
@@ -179,39 +191,41 @@
             time: Date.now()
           });
           postForm.reset();
+          pokazKomunikat("Post zapisany! ID: " + docRef.id);
           pobierzMojePosty(user.uid);
-          console.log("Post zapisany!");
         } catch (err) {
-          console.error("Błąd zapisu posta:", err);
-          alert("Nie udało się zapisać posta");
+          pokazKomunikat("Nie udało się zapisać posta: " + err.message, "error");
         }
+      } else {
+        pokazKomunikat("Uzupełnij tytuł i treść", "error");
       }
     });
 
-    // Pobieranie postów użytkownika
+    // 📄 Pobieranie postów
     async function pobierzMojePosty(uid) {
       postyLista.innerHTML = "";
       const q = query(collection(db, "posty"), where("uid", "==", uid));
       try {
         const snapshot = await getDocs(q);
-        console.log("Pobrane posty:", snapshot.size);
+        if (snapshot.empty) {
+          pokazKomunikat("Brak postów do wyświetlenia");
+          return;
+        }
         snapshot.forEach(doc => {
           const post = doc.data();
-          console.log("Post:", post);
           const div = document.createElement("div");
           div.className = "post-box";
           div.innerHTML = `<h4>${post.title}</h4><p>${post.content}</p>`;
           postyLista.appendChild(div);
         });
       } catch (err) {
-        console.error("Błąd pobierania postów:", err);
-        postyLista.innerHTML = "<p>Nie udało się pobrać postów.</p>";
+        pokazKomunikat("Nie udało się pobrać postów: " + err.message, "error");
       }
     }
 
-    // Startowe wczytanie postów
+    // 🔄 Startowe pobranie postów
     pobierzMojePosty(user.uid);
   });
-    </script>
+          </script>
 </body>
   </html>
