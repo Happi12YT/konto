@@ -188,7 +188,8 @@
             author: user.displayName || "Anonim",
             title,
             content,
-            time: Date.now()
+            time: Date.now(),
+            views: 0
           });
           postForm.reset();
           pokazKomunikat("Post zapisany! ID: " + docRef.id);
