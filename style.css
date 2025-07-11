@@ -265,3 +265,31 @@ body {
   margin: 0;
   font-size: 15px;
 }
+
+.edit-box button,
+#logoutBtn,
+#postForm button {
+  padding: 12px 20px;
+  background: #0077cc;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background 0.3s;
+}
+
+.edit-box button:hover,
+#logoutBtn:hover,
+#postForm button:hover {
+  background: #005fa3;
+}
+
+.post-box {
+  background: #f9f9f9;
+  border-radius: 12px;
+  padding: 15px;
+  margin-top: 15px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
