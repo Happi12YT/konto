@@ -116,7 +116,7 @@
     apiKey: "AIzaSyCiWN76pTmswQetee7CGdNc6Q845Hrdg8A",
     authDomain: "happi12-sites.firebaseapp.com",
     projectId: "happi12-sites",
-    storageBucket: "happi12-sites.firebasestorage.app",
+    storageBucket: "happi12-sites",
     messagingSenderId: "269132427609",
     appId: "1:269132427609:web:049c9b03f8b4224a37dc48"
   };
@@ -125,12 +125,32 @@
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-  // 🔔 Funkcja komunikatu na stronie
+  // 🔔 Komunikaty
   function pokazKomunikat(tresc, typ = "info") {
     const box = document.getElementById("komunikat");
     box.textContent = tresc;
     box.style.borderLeftColor = typ === "error" ? "#d9534f" : "#ffc107";
     box.style.background = typ === "error" ? "#f8d7da" : "#fffbdd";
+  }
+
+  // 📤 Upload do Cloudinary
+  async function uploadImageToCloudinary(file) {
+    const url = "https://api.cloudinary.com/v1_1/TWOJA_NAZWA_CLOUDINARY/image/upload";
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", "TWÓJ_UPLOAD_PRESET");
+
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        body: formData
+      });
+      const data = await res.json();
+      return data.secure_url;
+    } catch (err) {
+      pokazKomunikat("Błąd przesyłania obrazka: " + err.message, "error");
+      return null;
+    }
   }
 
   // 🎯 Elementy interfejsu
@@ -151,8 +171,6 @@
     }
 
     pokazKomunikat("Witaj, " + (user.displayName || "Użytkowniku") + "!");
-
-    // Dane użytkownika
     userName.textContent = user.displayName || "Brak";
     userEmail.textContent = user.email;
     userUID.textContent = user.uid;
@@ -175,30 +193,38 @@
       signOut(auth).then(() => window.location.href = "/");
     };
 
-    // 📝 Dodawanie posta
+    // 📝 Dodawanie posta z obrazkiem
     postForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const title = document.getElementById("postTitle").value.trim();
       const content = document.getElementById("postContent").value.trim();
+      const imageFile = document.getElementById("postImage")?.files[0];
 
-      if (title && content) {
-        try {
-          const docRef = await addDoc(collection(db, "posty"), {
-            uid: user.uid,
-            author: user.displayName || "Anonim",
-            title,
-            content,
-            time: Date.now(),
-            views: 0
-          });
-          postForm.reset();
-          pokazKomunikat("Post zapisany! ID: " + docRef.id);
-          pobierzMojePosty(user.uid);
-        } catch (err) {
-          pokazKomunikat("Nie udało się zapisać posta: " + err.message, "error");
-        }
-      } else {
-        pokazKomunikat("Uzupełnij tytuł i treść", "error");
+      if (!title || !content) {
+        return pokazKomunikat("Uzupełnij tytuł i treść", "error");
+      }
+
+      let imageUrl = "";
+      if (imageFile) {
+        imageUrl = await uploadImageToCloudinary(imageFile);
+        if (!imageUrl) return;
+      }
+
+      try {
+        const docRef = await addDoc(collection(db, "posty"), {
+          uid: user.uid,
+          author: user.displayName || "Anonim",
+          title,
+          content,
+          imageUrl,
+          time: Date.now(),
+          views: 0
+        });
+        postForm.reset();
+        pokazKomunikat("Post zapisany! ID: " + docRef.id);
+        pobierzMojePosty(user.uid);
+      } catch (err) {
+        pokazKomunikat("Nie udało się zapisać posta: " + err.message, "error");
       }
     });
 
@@ -217,10 +243,11 @@
           const div = document.createElement("div");
           div.className = "post-box";
           div.innerHTML = `
-  <a href="/posty/post?id=${doc.id}">
-    <h4>${post.title}</h4>
-    <p>${post.content.substring(0, 100)}...</p>
-  </a>`;
+            <a href="/posty/post?id=${doc.id}">
+              <h4>${post.title}</h4>
+              ${post.imageUrl ? `<img src="${post.imageUrl}" alt="Obrazek posta" style="max-width:100%; margin-top:10px;"/>` : ""}
+              <p>${post.content.substring(0, 100)}...</p>
+            </a>`;
           postyLista.appendChild(div);
         });
       } catch (err) {
@@ -231,6 +258,7 @@
     // 🔄 Startowe pobranie postów
     pobierzMojePosty(user.uid);
   });
-          </script>
+</script>
+
 </body>
   </html>
