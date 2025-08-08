@@ -135,10 +135,10 @@
 
   // 📤 Upload do Cloudinary
   async function uploadImageToCloudinary(file) {
-    const url = "https://api.cloudinary.com/v1_1/TWOJA_NAZWA_CLOUDINARY/image/upload";
+    const url = "https://api.cloudinary.com/v1_1/dvxqeqf4l/image/upload";
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("upload_preset", "TWÓJ_UPLOAD_PRESET");
+    formData.append("upload_preset", "Prześlij");
 
     try {
       const res = await fetch(url, {
